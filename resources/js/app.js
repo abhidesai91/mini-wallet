@@ -1,5 +1,5 @@
 import './bootstrap';
 import { createApp } from 'vue';
-import Welcome from './components/Welcome.vue';
+import Wallet from './components/Wallet.vue';
 
-createApp(Welcome).mount('#app');
+createApp(Wallet).mount('#app');
