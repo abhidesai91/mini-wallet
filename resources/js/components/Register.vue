@@ -6,10 +6,10 @@
       <input v-model="email" placeholder="Email" class="w-full p-3 mb-4 border rounded"/>
       <input v-model="password" type="password" placeholder="Password" class="w-full p-3 mb-4 border rounded"/>
       <input v-model="password_confirmation" type="password" placeholder="Confirm Password" class="w-full p-3 mb-4 border rounded"/>
-      <button @click="register" class="w-full bg-green-500 text-white p-3 rounded hover:bg-green-600">Register</button>
+      <button @click="register" class="w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 cursor-pointer">Register</button>
       <p v-if="error" class="text-red-500 mt-2">{{ error }}</p>
       <div class="mt-4 text-center">
-        <router-link to="/login" class="text-blue-500 hover:underline">Already have an account? Login</router-link>
+        <router-link to="/login" class="text-blue-500 hover:underline cursor-pointer">Already have an account? Login</router-link>
       </div>
     </div>
   </div>
@@ -31,7 +31,7 @@ export default {
           password_confirmation: this.password_confirmation
         });
         localStorage.setItem('token', res.data.access_token);
-        this.$router.push('/dashboard');
+        this.$router.push('/wallet');
       } catch (err) {
         this.error = err.response?.data?.message || "Registration failed";
       }

@@ -1,5 +1,8 @@
 import './bootstrap';
 import { createApp } from 'vue';
-import Wallet from './components/Wallet.vue';
+import router from './router';
+import App from './App.vue';
 
-createApp(Wallet).mount('#app');
+createApp(App)
+  .use(router)
+  .mount('#app');

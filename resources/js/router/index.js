@@ -7,7 +7,7 @@ const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
-  { path: '/Wallet', component: Wallet, meta: { requiresAuth: true } },
+  { path: '/wallet', component: Wallet, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({

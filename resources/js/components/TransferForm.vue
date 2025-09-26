@@ -3,18 +3,37 @@
     <h3 class="text-xl font-semibold text-gray-800 mb-4">Send Money</h3>
 
     <form @submit.prevent="submitTransfer" class="space-y-4">
-      <div>
+      <!-- Recipient Autocomplete -->
+      <div class="relative">
         <label for="recipient" class="block text-sm font-medium text-gray-700 mb-2">
-          Recipient User ID
+          Recipient
         </label>
         <input
           id="recipient"
-          v-model="receiver_id"
+          v-model="query"
           type="text"
-          placeholder="Enter recipient ID"
+          placeholder="Search by name or email"
+          @focus="showDropdown = true"
+          @input="onQueryChange"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          autocomplete="off"
           required
         />
+
+        <!-- Suggestions -->
+        <div v-if="showDropdown && filteredUsers.length"
+             class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+          <div v-for="u in filteredUsers" :key="u.id"
+               @click="selectUser(u)"
+               class="px-3 py-2 cursor-pointer hover:bg-gray-50">
+            <div class="text-sm font-medium text-gray-900">{{ u.name }}</div>
+            <div class="text-xs text-gray-500">{{ u.email }}</div>
+          </div>
+        </div>
+
+        <p v-if="selectedUser" class="text-xs text-gray-500 mt-1">
+          Selected: {{ selectedUser.name }} (ID: {{ selectedUser.id }})
+        </p>
       </div>
 
       <div>
@@ -38,8 +57,8 @@
 
       <button
         type="submit"
-        :disabled="isLoading"
-        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition duration-200"
+        :disabled="isLoading || !selectedUser"
+        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition duration-200 cursor-pointer"
       >
         <span v-if="isLoading">Sending...</span>
         <span v-else>Send Money</span>
@@ -56,23 +75,66 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import api from '../axios'
 
-const receiver_id = ref('')
+const emit = defineEmits(['transferred'])
+
+const users = ref([])
+const query = ref('')
+const showDropdown = ref(false)
+const selectedUser = ref(null)
 const amount = ref('')
 const message = ref('')
 const messageType = ref('success')
 const isLoading = ref(false)
 
+const fetchUsers = async (q = '') => {
+  const res = await api.get('/users', { params: { per_page: 200, q } })
+  users.value = res.data.data || []
+}
+
+const onClickOutside = (e) => {
+  const container = e.target.closest('#recipient')
+  if (!container) showDropdown.value = false
+}
+
+onMounted(() => {
+  fetchUsers()
+  window.addEventListener('click', onClickOutside)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', onClickOutside)
+})
+
+const onQueryChange = async () => {
+  showDropdown.value = true
+  await fetchUsers(query.value)
+}
+
+const filteredUsers = computed(() => {
+  if (!query.value) return users.value
+  const q = query.value.toLowerCase()
+  return users.value.filter(u =>
+    (u.name && u.name.toLowerCase().includes(q)) ||
+    (u.email && u.email.toLowerCase().includes(q))
+  )
+})
+
+const selectUser = (u) => {
+  selectedUser.value = u
+  query.value = `${u.name} <${u.email}>`
+  showDropdown.value = false
+}
+
 const submitTransfer = async () => {
-  // Validation
-  if (!receiver_id.value || !amount.value) {
-    message.value = 'Please enter both fields'
+  if (!selectedUser.value) {
+    message.value = 'Please select a recipient'
     messageType.value = 'error'
     return
   }
-
-  if (parseFloat(amount.value) <= 0) {
+  if (!amount.value || parseFloat(amount.value) <= 0) {
     message.value = 'Amount must be greater than 0'
     messageType.value = 'error'
     return
@@ -81,13 +143,25 @@ const submitTransfer = async () => {
   isLoading.value = true
   message.value = ''
 
-  // Simulate API call
-  setTimeout(() => {
-    message.value = `Successfully sent $${parseFloat(amount.value).toFixed(2)} to User ${receiver_id.value}`
+  try {
+    const res = await api.post('/transactions', {
+      receiver_id: selectedUser.value.id,
+      amount: parseFloat(amount.value)
+    })
+
+    message.value = 'Transfer successful'
     messageType.value = 'success'
-    receiver_id.value = ''
     amount.value = ''
+    selectedUser.value = null
+    query.value = ''
+    emit('transferred', res.data.transaction)
+  } catch (err) {
+    const apiMsg = err?.response?.data?.message
+    const firstError = err?.response?.data?.errors && Object.values(err.response.data.errors)[0]?.[0]
+    message.value = firstError || apiMsg || 'Transfer failed'
+    messageType.value = 'error'
+  } finally {
     isLoading.value = false
-  }, 1000)
+  }
 }
 </script>

@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-lg font-medium opacity-90">Current Balance</h2>
-        <p class="text-3xl font-bold mt-2">${{ balance.toFixed(2) }}</p>
+        <p class="text-3xl font-bold mt-2">${{ Number(balance).toFixed(2) }}</p>
         <p class="text-sm opacity-75 mt-1">Available to spend</p>
       </div>
       <div class="bg-white bg-opacity-20 rounded-full p-3">
@@ -16,12 +16,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import api from '../axios'
 
 const balance = ref(0)
 
-// Dummy API call
-onMounted(() => {
-  balance.value = 500.00 // initial dummy balance
-})
+const reload = async () => {
+  const res = await api.get('/transactions', { params: { per_page: 1 } })
+  balance.value = res.data.balance || 0
+}
+
+reload()
+
+// Expose method so parent can trigger refresh
+defineExpose({ reload })
 </script>
