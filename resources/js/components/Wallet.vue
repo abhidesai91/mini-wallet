@@ -54,7 +54,6 @@
       </div>
 
     </main>
-    <Notification ref="notificationRef"/>
 
   </div>
 </template>

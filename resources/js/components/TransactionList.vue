@@ -4,6 +4,14 @@
       <h3 class="text-xl font-semibold text-gray-800">Transaction History</h3>
     </div>
 
+      <div v-if="isLoading" class="text-center py-8">
+      <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <p class="mt-2 text-gray-500">Loading transactions...</p>
+    </div>
+    <div v-else>
     <div v-if="transactions.length === 0" class="text-center py-8 text-gray-500">
       <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
         <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
@@ -50,6 +58,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -59,10 +68,13 @@ import api from '../axios'
 
 const transactions = ref([])
 let currentUserId = null
-
+const isLoading = ref(true);
 const emit = defineEmits(['update-balance'])
 
 const reload = async () => {
+  isLoading.value = true 
+  try {
+
   const res = await api.get('/transactions', { params: { per_page: 20 } })
   currentUserId = res.data.user_id
   const raw = res.data.transactions?.data || []
@@ -74,6 +86,12 @@ const reload = async () => {
       ? (tx.receiver?.name ?? `User ${tx.receiver_id}`)
       : (tx.sender?.name ?? `User ${tx.sender_id}`),
   }))
+
+  } catch (error) {
+    console.error("Failed to load transactions:", error);
+  } finally {
+    isLoading.value = false 
+  }
 }
 
 const formatDate = (dateString) => new Date(dateString).toLocaleString()
