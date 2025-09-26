@@ -77,6 +77,9 @@ class TransactionController extends Controller
             DB::table('users')->where('id', $receiverId)
                 ->update(['balance' => DB::raw('balance + ' . number_format($amount, 2, '.', ''))]);
 
+            $updatedSender = User::find($senderId);
+            $updatedReceiver = User::find($receiverId);
+
             $tx = Transaction::create([
                 'sender_id' => $senderId,
                 'receiver_id' => $receiverId,
@@ -84,6 +87,9 @@ class TransactionController extends Controller
                 'commission_fee' => $commission,
                 'total_debited' => $totalDebited,
             ]);
+
+            event(new \App\Events\TransferCompleted($tx,$updatedSender->balance,
+            $updatedReceiver->balance));
 
             return $tx;
         }, 5);

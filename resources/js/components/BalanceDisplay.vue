@@ -4,7 +4,11 @@
       <div>
         <h2 class="text-lg font-medium opacity-90">Current Balance</h2>
         <p class="text-3xl font-bold mt-2">${{ Number(balance).toFixed(2) }}</p>
-        <p class="text-sm opacity-75 mt-1">Available to spend</p>
+        <p class="text-sm opacity-90 mt-1">
+          Available to send (after 1.5% fee): 
+          <span class="font-semibold">${{ availableToSend }}</span>
+        </p>
+        
       </div>
       <div class="bg-white bg-opacity-20 rounded-full p-3">
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -16,7 +20,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref , computed } from 'vue'
 import api from '../axios'
 
 const balance = ref(0)
@@ -27,6 +31,12 @@ const reload = async () => {
 }
 
 reload()
+
+const commissionRate = 0.015
+
+const availableToSend = computed(() =>
+  (balance.value / (1 + commissionRate)).toFixed(2)
+)
 
 // Expose method so parent can trigger refresh
 defineExpose({ reload })

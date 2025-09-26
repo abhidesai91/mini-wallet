@@ -54,11 +54,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import api from '../axios'
 
 const transactions = ref([])
 let currentUserId = null
+
+const emit = defineEmits(['update-balance'])
 
 const reload = async () => {
   const res = await api.get('/transactions', { params: { per_page: 20 } })
@@ -75,6 +77,40 @@ const reload = async () => {
 }
 
 const formatDate = (dateString) => new Date(dateString).toLocaleString()
+
+const handleIncomingTransaction = (event) => {
+  console.log('Pusher event received:', event)
+
+  const newTransaction = formatTransaction(event.transaction)
+  transactions.value.unshift(newTransaction)
+
+  let newBalance;
+  if (event.transaction.sender_id === currentUserId.value) {
+    newBalance = event.senderNewBalance;
+  } else {
+    newBalance = event.receiverNewBalance;
+  }
+
+}
+
+
+onMounted(async () => {
+  await reload()
+
+  if (currentUserId.value) {
+    console.log(`Listening on private channel: user.${currentUserId.value}`)
+    window.Echo.private(`user.${currentUserId.value}`)
+      .listen('.TransferCompleted', handleIncomingTransaction)
+  }
+})
+
+onUnmounted(() => {
+  if (currentUserId.value) {
+    window.Echo.leaveChannel(`user.${currentUserId.value}`)
+    console.log(`Left channel: user.${currentUserId.value}`)
+  }
+})
+
 
 reload()
 
